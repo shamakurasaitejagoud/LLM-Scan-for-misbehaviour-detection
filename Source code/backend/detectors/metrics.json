@@ -1,0 +1,42 @@
+{
+  "jailbreak": {
+    "accuracy_train": 0.9845,
+    "accuracy_test": 0.8808,
+    "loss_train": 0.0955,
+    "loss_test": 0.2491,
+    "roc_auc_train": 0.9983,
+    "roc_auc_test": 0.9616
+  },
+  "bias": {
+    "accuracy_train": 0.9639,
+    "accuracy_test": 0.9085,
+    "loss_train": 0.1367,
+    "loss_test": 0.2451,
+    "roc_auc_train": 0.9919,
+    "roc_auc_test": 0.9622
+  },
+  "lies": {
+    "accuracy_train": 0.9427,
+    "accuracy_test": 0.9072,
+    "loss_train": 0.1575,
+    "loss_test": 0.2301,
+    "roc_auc_train": 0.9847,
+    "roc_auc_test": 0.9688
+  },
+  "toxic": {
+    "accuracy_train": 0.9975,
+    "accuracy_test": 0.9542,
+    "loss_train": 0.0282,
+    "loss_test": 0.1271,
+    "roc_auc_train": 1.0,
+    "roc_auc_test": 0.9886
+  },
+  "backdoor": {
+    "accuracy_train": 0.9993,
+    "accuracy_test": 1.0,
+    "loss_train": 0.0041,
+    "loss_test": 0.0025,
+    "roc_auc_train": 1.0,
+    "roc_auc_test": 1.0
+  }
+}
