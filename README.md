@@ -168,17 +168,3 @@ cd LLM-Scan-for-misbehaviour-detection
    ```
 
 Open your browser and navigate to `http://localhost:3000` to interact with the platform.
-
----
-
-## 👥 Contributors
-
-- **Sai Teja** (Roll No: `21RA1A6601`)
-- **B. Rahul** (Roll No: `21RA1A6602`)
-- **K. Shiva** (Roll No: `21RA1A6603`)
-
-### 🎓 Guided By
-**Dr. M. Vasudha**  
-*Associate Professor, Department of CSE (AIML)*  
-**Keshav Memorial Institute of Technology (KMIT)**  
-*(Autonomous Institution affiliated to JNTUH)*
