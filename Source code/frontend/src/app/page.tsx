@@ -1,3 +1,4 @@
+// Vercel build trigger
 import { Navbar } from "@/components/landing/Navbar";
 import { Hero } from "@/components/landing/Hero";
 import { Logos } from "@/components/landing/Logos";
