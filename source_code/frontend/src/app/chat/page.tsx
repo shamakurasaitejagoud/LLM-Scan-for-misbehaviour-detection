@@ -103,6 +103,7 @@ export default function ChatPage() {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
+          'ngrok-skip-browser-warning': 'true',
         },
         body: JSON.stringify({ prompt: currentPrompt }),
         signal: controller.signal,
@@ -235,6 +236,7 @@ export default function ChatPage() {
       const response = await fetch(`${API_BASE_URL}/recent-chats`, {
         headers: {
           'Authorization': `Bearer ${token}`,
+          'ngrok-skip-browser-warning': 'true',
         }
       });
       if (response.ok) {
@@ -258,6 +260,7 @@ export default function ChatPage() {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
+          'ngrok-skip-browser-warning': 'true',
         }
       });
       if (response.ok) {

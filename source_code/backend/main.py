@@ -128,9 +128,11 @@ async def get_recent_chats(current_user: auth.User = Depends(auth.get_current_ac
     """
     Get the 10 most recent chats for the authenticated user.
     """
+    print(f"[DEBUG] get_recent_chats called by user email: {repr(current_user.email)}")
     db = get_db()
     cursor = db["chats"].find({"email": current_user.email}).sort("timestamp", -1).limit(10)
     chats = await cursor.to_list(length=10)
+    print(f"[DEBUG] Found {len(chats)} chats for user: {current_user.email}")
     res = []
     for chat in chats:
         res.append({
