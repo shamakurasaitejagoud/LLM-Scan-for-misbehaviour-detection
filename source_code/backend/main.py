@@ -159,7 +159,7 @@ async def delete_chat(chat_id: str, current_user: auth.User = Depends(auth.get_c
 
 
 @app.get("/scan-results")
-async def get_scan_results(prompt: str, current_user: auth.User = Depends(auth.get_current_active_user)):
+async def get_scan_results(prompt: str, current_user: Optional[auth.User] = Depends(auth.get_optional_current_user)):
     """
     Retrieve cached scan results. If not cached, performs the scan.
     """
@@ -170,13 +170,14 @@ async def get_scan_results(prompt: str, current_user: auth.User = Depends(auth.g
         print("[DEBUG] Cache hit (fast path)!")
         return scan_cache[prompt]
     
-    # Try retrieving from MongoDB
-    db = get_db()
-    chat_doc = await db["chats"].find_one({"email": current_user.email, "prompt": prompt})
-    if chat_doc and "analysis" in chat_doc:
-        print("[DEBUG] Cache hit (MongoDB)!")
-        scan_cache[prompt] = chat_doc["analysis"]
-        return chat_doc["analysis"]
+    # Try retrieving from MongoDB if user is logged in
+    if current_user:
+        db = get_db()
+        chat_doc = await db["chats"].find_one({"email": current_user.email, "prompt": prompt})
+        if chat_doc and "analysis" in chat_doc:
+            print("[DEBUG] Cache hit (MongoDB)!")
+            scan_cache[prompt] = chat_doc["analysis"]
+            return chat_doc["analysis"]
     
     # Check if currently scanning in another thread
     if prompt in scanning_prompts:

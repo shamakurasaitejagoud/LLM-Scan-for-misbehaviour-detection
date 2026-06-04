@@ -40,3 +40,23 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
 
 async def get_current_active_user(current_user: User = Depends(get_current_user)):
     return current_user
+
+oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
+
+async def get_optional_current_user(token: str = Depends(oauth2_scheme_optional)):
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, NEXTAUTH_SECRET, algorithms=[ALGORITHM])
+        email: str = payload.get("email")
+        if email is None:
+            return None
+    except JWTError:
+        return None
+        
+    db = get_db()
+    user_doc = await db["users"].find_one({"email": email})
+    if user_doc is None:
+        return None
+        
+    return User(**user_doc)
