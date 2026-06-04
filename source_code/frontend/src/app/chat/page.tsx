@@ -223,10 +223,14 @@ export default function ChatPage() {
 
   const [recentChats, setRecentChats] = useState<{ id: string, prompt: string, response: string, timestamp: string }[]>([]);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [recentChatsError, setRecentChatsError] = useState<string | null>(null);
 
   const fetchRecentChats = useCallback(async () => {
     const token = (session as any)?.accessToken;
-    if (!token) return;
+    if (!token) {
+      setRecentChatsError("No session token available");
+      return;
+    }
     try {
       const response = await fetch(`${API_BASE_URL}/recent-chats`, {
         headers: {
@@ -236,9 +240,13 @@ export default function ChatPage() {
       if (response.ok) {
         const data = await response.json();
         setRecentChats(data);
+        setRecentChatsError(null);
+      } else {
+        setRecentChatsError(`API error: ${response.status}`);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn("Failed to fetch recent chats", err);
+      setRecentChatsError(`Network error: ${err.message || err}`);
     }
   }, [session]);
 
@@ -428,7 +436,10 @@ export default function ChatPage() {
                   </div>
                 </div>
               ))}
-              {recentChats.length === 0 && (
+              {recentChatsError && (
+                <p className="px-3 py-1 text-[11px] text-red-400 bg-red-500/10 rounded-lg mx-2 border border-red-500/20">{recentChatsError}</p>
+              )}
+              {recentChats.length === 0 && !recentChatsError && (
                 <p className="px-3 py-2 text-xs text-gray-500 italic">No recent chats</p>
               )}
             </div>

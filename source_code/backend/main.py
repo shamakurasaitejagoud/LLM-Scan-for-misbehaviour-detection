@@ -7,6 +7,13 @@ Endpoints:
   POST /scan       full AIE pipeline: layer_aie + prompt_aie + stats
 """
 
+import os
+from dotenv import load_dotenv
+
+# Load environment variables relative to this script before importing other local modules
+current_dir = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(current_dir, ".env"))
+
 import torch
 import threading
 from fastapi import FastAPI, HTTPException, Depends
@@ -14,13 +21,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from typing import Optional
 import uvicorn
-from dotenv import load_dotenv
 from datetime import timedelta
-import os
 import auth
-
-# Load environment variables (HF_TOKEN)
-load_dotenv()
 
 from model import MistralScanner
 from schemas import ScanRequest, ScanResponse
