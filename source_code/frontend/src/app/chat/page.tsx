@@ -661,7 +661,7 @@ export default function ChatPage() {
             <div className="flex-1 w-full bg-[#131314] overflow-hidden relative">
               <iframe
                 key={currentScanIndex}
-                src={`${STREAMLIT_BASE_URL}/?prompt=${encodeURIComponent(scannedPrompts[currentScanIndex])}&token=${encodeURIComponent((session as any)?.accessToken || '')}`}
+                src={`${STREAMLIT_BASE_URL.replace(/\/$/, "")}/?embed=true&prompt=${encodeURIComponent(scannedPrompts[currentScanIndex])}&token=${encodeURIComponent((session as any)?.accessToken || '')}`}
                 className="w-full h-full border-none bg-[#131314]"
                 title="LLM Scan Graph Dashboard"
               />
