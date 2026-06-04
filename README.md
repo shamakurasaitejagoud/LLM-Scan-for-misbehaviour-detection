@@ -168,3 +168,6 @@ cd LLM-Scan-for-misbehaviour-detection
    ```
 
 Open your browser and navigate to `http://localhost:3000` to interact with the platform.
+
+---
+

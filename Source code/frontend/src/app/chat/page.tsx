@@ -24,6 +24,9 @@ import {
 import { getSession, useSession, signOut } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const STREAMLIT_BASE_URL = process.env.NEXT_PUBLIC_STREAMLIT_URL || 'http://localhost:8501';
+
 export default function ChatPage() {
   const { data: session } = useSession();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -95,7 +98,7 @@ export default function ChatPage() {
         window.location.href = '/';
         return;
       }
-      const response = await fetch('http://localhost:8000/scan', {
+      const response = await fetch(`${API_BASE_URL}/scan`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -225,7 +228,7 @@ export default function ChatPage() {
     const token = (session as any)?.accessToken;
     if (!token) return;
     try {
-      const response = await fetch('http://localhost:8000/recent-chats', {
+      const response = await fetch(`${API_BASE_URL}/recent-chats`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         }
@@ -243,7 +246,7 @@ export default function ChatPage() {
     const token = (session as any)?.accessToken;
     if (!token) return;
     try {
-      const response = await fetch(`http://localhost:8000/chats/${chatId}`, {
+      const response = await fetch(`${API_BASE_URL}/chats/${chatId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -658,7 +661,7 @@ export default function ChatPage() {
             <div className="flex-1 w-full bg-[#131314] overflow-hidden relative">
               <iframe
                 key={currentScanIndex}
-                src={`http://localhost:8501/?prompt=${encodeURIComponent(scannedPrompts[currentScanIndex])}&token=${encodeURIComponent((session as any)?.accessToken || '')}`}
+                src={`${STREAMLIT_BASE_URL}/?prompt=${encodeURIComponent(scannedPrompts[currentScanIndex])}&token=${encodeURIComponent((session as any)?.accessToken || '')}`}
                 className="w-full h-full border-none bg-[#131314]"
                 title="LLM Scan Graph Dashboard"
               />
