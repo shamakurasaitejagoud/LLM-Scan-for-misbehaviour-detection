@@ -59,7 +59,8 @@ if not prompt:
     prompt = st.text_input("Enter prompt to scan:", "What is 2+2?")
 
 # Endpoint to fetch cached scan results or run a new scan
-backend_url = "http://127.0.0.1:8000/scan-results"
+import os
+backend_url = os.getenv("BACKEND_URL", "http://127.0.0.1:8000").rstrip("/") + "/scan-results"
 
 headers = {}
 if token:
