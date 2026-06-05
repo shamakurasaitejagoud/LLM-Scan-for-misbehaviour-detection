@@ -80,6 +80,89 @@
 
 ---
 
+## 🤖 Stacked Ensemble Classifier & Calibration
+
+### **Detailed Visual Architecture (Level-0 & Level-1)**
+
+```mermaid
+graph TD
+    %% Input Feature Vector
+    X_IN["Scaled Feature Vector<br>Input: X ∈ ℝ¹²⁶"] -->|Distributed Parallel Routing| Base1
+    X_IN --> Base2
+    X_IN --> Base3
+
+    subgraph LEVEL_0 ["Level-0: Ensemble Classifier Stage"]
+        subgraph MLP_MODEL ["Multi-Layer Perceptron (MLP)"]
+            Base1["Input Layer (126 nodes)"] -->|Weights: W₁ ∈ ℝ¹²⁶ˣ¹²⁸| H1["Hidden Layer 1 (128 nodes)"]
+            H1 -->|Weights: W₂ ∈ ℝ¹²⁸ˣ⁶⁴| H2["Hidden Layer 2 (64 nodes)"]
+            H2 -->|Weights: W₃ ∈ ℝ⁶⁴ˣ²| Out1["Output Logits (2 nodes)"]
+        end
+
+        subgraph RF_MODEL ["Random Forest (RF) Classifier"]
+            Base2["Bootstrap Aggregator (Bagging)"] --> Trees["200 Decision Trees (Max Depth = 10)"]
+            Trees --> Out2["Vote Fraction Distributions"]
+        end
+
+        subgraph SVC_MODEL ["Support Vector Classifier (LinearSVC/SVC)"]
+            Base3["Hyperplane Optimization"] --> Space["Decision Boundary: w·x + b = 0"]
+            Space --> Out3["Raw Margin Distances"]
+        end
+    end
+
+    Out1 -->|Logit Predictions| Calib1
+    Out2 -->|Uncalibrated Vote Fractions| Calib2
+    Out3 -->|Raw Decision Scores| Calib3
+
+    subgraph LEVEL_1 ["Level-1: Stacking & Calibration Stage (Platt Scaling)"]
+        subgraph CALIB_WRAPPER ["CalibratedClassifierCV (3-Fold Cross-Validation)"]
+            Calib1["Sigmoid Calibration (Fold 1-3)"]
+            Calib2["Sigmoid Calibration (Fold 1-3)"]
+            Calib3["Sigmoid Calibration (Fold 1-3)"]
+        end
+
+        Calib1 & Calib2 & Calib3 --> Cons["Meta-Stacking Consensus Layer<br>(Weighted Logistic Meta-Classifier)"]
+        Cons -->|"Consensus Sigmoid Transformation"| FinalProb["Calibrated Probability [0, 1]"]
+    end
+
+    FinalProb -->|"Threshold Comparison"| Badge["Classifier Decision Maker<br>(SAFE / UNSAFE Threat Alert)"]
+```
+
+### **Base Classifiers Technical Specifications**
+
+| Base Classifier (Level-0) | Inputs | Optimizer / Solvers | Parameters & Architecture Details | Estimated Parameter Count |
+| :--- | :--- | :--- | :--- | :--- |
+| **Multi-Layer Perceptron (MLP)** | $X \in \mathbb{R}^{126}$ | **Adam** (Adaptive Moment Estimation) | 3-Layer Dense Network (126 → 128 → 64 → 2), ReLU activation, cross-entropy minimization with backpropagation. | **24,642** weights & biases |
+| **Random Forest (RF)** | $X \in \mathbb{R}^{126}$ | **Bootstrap Aggregator (Bagging)** | 200 Decision Trees, Max Depth: 10, Min Split: 5. Split optimization using Gini Impurity. | ~**204,600** split thresholds |
+| **Support Vector Classifier (SVC)** | $X \in \mathbb{R}^{126}$ | **Sequential Minimal Optimization (SMO)** | Separating Hyperplane boundary: $w \cdot x + b = 0$, RBF or Linear kernel. Minimizes Hinge loss. | **127** coefficients + Support Vectors |
+
+### **Mathematical Execution Formulations**
+
+* **SyncLayer-0 Forward Pass (MLP Example)**:
+  $$\mathbf{z} = \mathbf{W}_3 \cdot \text{ReLU}(\mathbf{W}_2 \cdot \text{ReLU}(\mathbf{W}_1 \mathbf{x} + \mathbf{b}_1) + \mathbf{b}_2) + \mathbf{b}_3$$
+
+* **Level-1 Sigmoid Calibration Calibration**:
+  $$P(y = 1 \mid f(\mathbf{x})) = \frac{1}{1 + \exp(A \cdot f(\mathbf{x}) + B)}$$
+
+* **Level-1 Consensus Stacking**:
+  $$\text{Consensus Probability} = \sigma\left( \sum_{m \in \{MLP, RF, SVC\}} w_m \cdot P_m(y=1 \mid \mathbf{x}) + b_{meta} \right)$$
+
+### **Stacking & Calibration Mechanics (Level-1)**
+
+1. **Why Calibration is Required**: Base models do not inherently output true probabilities. SVC outputs unconstrained hyperplane distances ($[-&infin;, +&infin;]$), while Random Forest outputs decision tree vote fractions.
+2. **Platt Scaling (Calibration)**: To solve this, base outputs are transformed using Platt Scaling via `CalibratedClassifierCV(cv=3, method='sigmoid')` to output true probabilities:
+   $$P(y = 1 \mid f(\mathbf{x})) = \frac{1}{1 + \exp(A \cdot f(\mathbf{x}) + B)}$$
+   Sigmoid calibration parameters $A$ and $B$ are fitted using Maximum Likelihood Estimation over 3 cross-validation partitions.
+3. **Consensus Stacking**: The calibrated probabilities are combined using a consensus meta-estimator (weighted consensus layer) to produce the final classification score.
+4. **Custom Category Decision Thresholds**:
+   - **Jailbreak**: Threshold $\ge 0.90$
+   - **Bias**: Threshold $\ge 0.85$
+   - **Lies (Hallucination)**: Threshold $\ge 0.98$
+   - **Toxic**: Threshold $\ge 0.85$
+   - **Backdoor**: Threshold $\ge 0.90$
+   - **Length Override**: Prompts with length $< 5$ characters are forced to `SAFE`.
+
+---
+
 ## 📁 Repository Structure
 
 ```

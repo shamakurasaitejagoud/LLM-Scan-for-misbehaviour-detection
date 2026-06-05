@@ -7,11 +7,11 @@ import { SplineSceneBasic } from "./SplineSceneBasic";
 
 export function Hero() {
   return (
-    <section className="relative pt-32 pb-16 md:pt-40 md:pb-24 min-h-[800px] overflow-hidden flex items-center">
+    <section id="home" className="relative pt-32 pb-16 md:pt-40 md:pb-24 min-h-[800px] overflow-hidden flex items-center scroll-mt-20">
       
       {/* Full-page Spline Background */}
-      <div className="absolute inset-0 w-full h-full z-0">
-        <div className="absolute inset-y-0 left-0 w-[150vw] z-0">
+      <div className="absolute inset-0 w-full h-full z-0 pointer-events-none overflow-hidden">
+        <div className="absolute inset-y-0 right-0 w-full lg:w-[50vw] z-0 pointer-events-none">
           <SplineSceneBasic />
         </div>
       </div>
@@ -42,7 +42,7 @@ export function Hero() {
             
             <div className="flex flex-wrap items-center gap-4">
               <motion.a 
-                href="https://github.com/zhangmengling/LLMScan"
+                href="https://github.com/shamakurasaitejagoud/LLM-Scan-for-misbehaviour-detection"
                 target="_blank"
                 rel="noopener noreferrer"
                 whileHover={{ scale: 1.05 }}

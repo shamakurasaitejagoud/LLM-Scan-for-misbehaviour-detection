@@ -40,7 +40,7 @@ export function Footer() {
           <div>
             <h4 className="font-semibold text-gray-900 mb-4">Code</h4>
             <ul className="space-y-3">
-              <li><a href="https://github.com/zhangmengling/LLMScan" target="_blank" rel="noopener noreferrer" className="text-sm text-gray-500 hover:text-purple-600 transition-colors">GitHub Repository</a></li>
+              <li><a href="https://github.com/shamakurasaitejagoud/LLM-Scan-for-misbehaviour-detection" target="_blank" rel="noopener noreferrer" className="text-sm text-gray-500 hover:text-purple-600 transition-colors">GitHub Repository</a></li>
               <li><Link href="#" className="text-sm text-gray-500 hover:text-purple-600 transition-colors">PyPI Package</Link></li>
               <li><Link href="#" className="text-sm text-gray-500 hover:text-purple-600 transition-colors">Installation</Link></li>
               <li><Link href="#" className="text-sm text-gray-500 hover:text-purple-600 transition-colors">Documentation</Link></li>
@@ -53,7 +53,7 @@ export function Footer() {
           <p className="text-sm text-gray-500">© {new Date().getFullYear()} LLM Scan. All rights reserved.</p>
           <div className="flex gap-4">
             <Link href="#" className="text-gray-400 hover:text-gray-600 transition-colors">Twitter</Link>
-            <Link href="#" className="text-gray-400 hover:text-gray-600 transition-colors">GitHub</Link>
+            <a href="https://github.com/shamakurasaitejagoud/LLM-Scan-for-misbehaviour-detection" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-600 transition-colors">GitHub</a>
             <Link href="#" className="text-gray-400 hover:text-gray-600 transition-colors">Discord</Link>
           </div>
         </div>

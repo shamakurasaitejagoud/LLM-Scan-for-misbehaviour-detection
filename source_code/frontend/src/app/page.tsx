@@ -1,9 +1,9 @@
 // Vercel build trigger
 import { Navbar } from "@/components/landing/Navbar";
 import { Hero } from "@/components/landing/Hero";
-import { Logos } from "@/components/landing/Logos";
 import { CodeSnippet } from "@/components/landing/CodeSnippet";
 import { Features } from "@/components/landing/Features";
+import { About } from "@/components/landing/About";
 import { Footer } from "@/components/landing/Footer";
 
 export default function Home() {
@@ -11,9 +11,9 @@ export default function Home() {
     <main className="min-h-screen bg-white">
       <Navbar />
       <Hero />
-      <Logos />
       <CodeSnippet />
       <Features />
+      <About />
       <Footer />
     </main>
   );

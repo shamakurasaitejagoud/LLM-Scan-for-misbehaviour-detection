@@ -10,6 +10,7 @@ import { useSession, signOut } from "next-auth/react";
 export function Navbar() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState("home");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { data: session } = useSession();
 
@@ -21,6 +22,36 @@ export function Navbar() {
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const sectionIds = ["home", "methodology", "evaluations", "about"];
+    
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY + 180;
+
+      // Special case: check if we reached the bottom of the page
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 80) {
+        setActiveSection("about");
+        return;
+      }
+
+      for (const id of sectionIds) {
+        const el = document.getElementById(id);
+        if (el) {
+          const top = el.offsetTop;
+          const height = el.offsetHeight;
+          if (scrollPosition >= top && scrollPosition < top + height) {
+            setActiveSection(id);
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   return (
@@ -36,10 +67,46 @@ export function Navbar() {
 
             {/* Nav Links */}
             <nav className="hidden md:flex space-x-8">
-              <Link href="#methodology" className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors">Methodology</Link>
-              <Link href="#evaluations" className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors">Evaluations</Link>
-              <a href="https://github.com/zhangmengling/LLMScan" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors">GitHub</a>
-              <Link href="#paper" className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors">Paper</Link>
+              <Link 
+                href="#home" 
+                className={`text-sm font-semibold transition-all duration-200 border-b-2 py-1 ${
+                  activeSection === "home" 
+                    ? "text-purple-600 border-purple-600" 
+                    : "text-gray-500 hover:text-gray-900 border-transparent"
+                }`}
+              >
+                Home
+              </Link>
+              <Link 
+                href="#methodology" 
+                className={`text-sm font-semibold transition-all duration-200 border-b-2 py-1 ${
+                  activeSection === "methodology" 
+                    ? "text-purple-600 border-purple-600" 
+                    : "text-gray-500 hover:text-gray-900 border-transparent"
+                }`}
+              >
+                Methodology
+              </Link>
+              <Link 
+                href="#performance-plots" 
+                className={`text-sm font-semibold transition-all duration-200 border-b-2 py-1 ${
+                  activeSection === "evaluations" 
+                    ? "text-purple-600 border-purple-600" 
+                    : "text-gray-500 hover:text-gray-900 border-transparent"
+                }`}
+              >
+                Performance
+              </Link>
+              <Link 
+                href="#about" 
+                className={`text-sm font-semibold transition-all duration-200 border-b-2 py-1 ${
+                  activeSection === "about" 
+                    ? "text-purple-600 border-purple-600" 
+                    : "text-gray-500 hover:text-gray-900 border-transparent"
+                }`}
+              >
+                About
+              </Link>
             </nav>
 
             {/* CTA Buttons */}

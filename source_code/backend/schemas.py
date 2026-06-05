@@ -8,6 +8,7 @@ from typing import List, Dict, Optional
 
 class ScanRequest(BaseModel):
     prompt: str = Field(..., min_length=1, max_length=2000, description="Prompt to scan")
+    chat_id: Optional[str] = Field(None, description="Active chat session ID")
 
 
 class StatsResult(BaseModel):
@@ -55,6 +56,9 @@ class ScanResponse(BaseModel):
     # Overall safety status
     is_safe: bool = Field(..., description="True if no category exceeds threshold")
     safety_summary: str = Field(..., description="Summary of the safety conclusion")
+
+    # Active chat session ID
+    chat_id: Optional[str] = Field(None, description="Active chat session ID")
 
     # DataFrames as list of records (for dashboard)
     layer_df: List[Dict]

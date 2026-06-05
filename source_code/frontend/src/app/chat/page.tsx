@@ -52,6 +52,7 @@ export default function ChatPage() {
   const [isScannerResizing, setIsScannerResizing] = useState(false);
   const [messages, setMessages] = useState<{ role: 'user' | 'model', content: string }[]>([]);
   const [scannedPrompts, setScannedPrompts] = useState<string[]>([]);
+  const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [currentScanIndex, setCurrentScanIndex] = useState(0);
   const [inputValue, setInputValue] = useState('');
@@ -105,7 +106,7 @@ export default function ChatPage() {
           'Authorization': `Bearer ${token}`,
           'ngrok-skip-browser-warning': 'true',
         },
-        body: JSON.stringify({ prompt: currentPrompt }),
+        body: JSON.stringify({ prompt: currentPrompt, chat_id: activeChatId }),
         signal: controller.signal,
       });
 
@@ -119,6 +120,9 @@ export default function ChatPage() {
       }
 
       const data = await response.json();
+      if (data.chat_id) {
+        setActiveChatId(data.chat_id);
+      }
 
       // Update messages with the model response
       setMessages(prev => [...prev, {
@@ -222,7 +226,7 @@ export default function ChatPage() {
     };
   }, [resizeScanner, stopScannerResizing, isScannerResizing]);
 
-  const [recentChats, setRecentChats] = useState<{ id: string, prompt: string, response: string, timestamp: string }[]>([]);
+  const [recentChats, setRecentChats] = useState<{ id: string, prompt: string, response: string, timestamp: string, messages?: { prompt: string, response: string, analysis: any }[] }[]>([]);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [recentChatsError, setRecentChatsError] = useState<string | null>(null);
 
@@ -264,13 +268,13 @@ export default function ChatPage() {
         }
       });
       if (response.ok) {
-        const chatToDelete = recentChats.find(c => c.id === chatId);
         setRecentChats(prev => prev.filter(c => c.id !== chatId));
-        if (chatToDelete && messages.length > 0 && messages[0].content === chatToDelete.prompt) {
+        if (activeChatId === chatId) {
           setMessages([]);
           setScannedPrompts([]);
           setCurrentScanIndex(0);
           setIsScannerOpen(false);
+          setActiveChatId(null);
         }
       } else {
         console.warn("Failed to delete chat", await response.text());
@@ -368,6 +372,7 @@ export default function ChatPage() {
                 setScannedPrompts([]);
                 setCurrentScanIndex(0);
                 setIsScannerOpen(false);
+                setActiveChatId(null);
               }}
               className={`flex items-center justify-center ${isSidebarOpen ? 'gap-3 w-full px-4 rounded-full' : 'w-10 h-10 rounded-full'} py-2.5 bg-[#282a2d] hover:bg-[#34373a] text-sm font-medium transition-colors text-white whitespace-nowrap`}
             >
@@ -396,13 +401,24 @@ export default function ChatPage() {
                 >
                   <button
                     onClick={() => {
-                      setMessages([
-                        { role: 'user', content: chat.prompt },
-                        { role: 'model', content: chat.response }
-                      ]);
-                      setScannedPrompts([chat.prompt]);
-                      setCurrentScanIndex(0);
+                      const chatMessages = chat.messages && chat.messages.length > 0
+                        ? chat.messages.flatMap((m) => [
+                            { role: 'user' as const, content: m.prompt },
+                            { role: 'model' as const, content: m.response }
+                          ])
+                        : [
+                             { role: 'user' as const, content: chat.prompt },
+                             { role: 'model' as const, content: chat.response }
+                           ];
+                      setMessages(chatMessages);
+                      
+                      const chatPrompts = chat.messages && chat.messages.length > 0
+                        ? chat.messages.map((m) => m.prompt)
+                        : [chat.prompt];
+                      setScannedPrompts(chatPrompts);
+                      setCurrentScanIndex(chatPrompts.length - 1);
                       setIsScannerOpen(true);
+                      setActiveChatId(chat.id);
                     }}
                     onMouseDown={(e) => e.stopPropagation()}
                     className="flex items-center gap-3 pl-3 pr-8 py-2 w-full text-sm text-gray-300 text-left transition-colors truncate"
@@ -686,3 +702,4 @@ export default function ChatPage() {
     </div>
   );
 }
+

@@ -978,13 +978,48 @@ Rather than directly feeding the raw 21-dimensional layer activation slice (repr
 * **Total Vector Dimensions**: $21 \times 6 = 126$ features.
 
 #### **5.7.2 Ensemble Classifier Configuration**
-1. **Calibrated Random Forest Classifier**:
-   * **Base Estimators**: `n_estimators = 200`
-   * **Max Depth**: `max_depth = 10`
-   * **Min Split Requirement**: `min_samples_split = 5`
-   * **Optimization**: Multi-threaded parallel processing enabled via `n_jobs = -1`.
-2. **Probability Calibration**:
-   Classifiers are calibrated via **Platt Scaling** using `CalibratedClassifierCV(cv=3, method='sigmoid')` to output true threat probabilities in the $[0, 1]$ range. This step transforms raw decision margins into reliable confidence metrics displayed in the user interfaces.
+The base classifiers (Level-0) and stacking calibration layer (Level-1) are configured and mathematically structured as follows:
+
+##### **A. Multi-Layer Perceptron (MLP) Configuration**
+* **Inputs**: Scaled feature vector $X \in \mathbb{R}^{126}$
+* **Architecture**: 3-layer feed-forward dense network (126 input $\to$ 128 hidden $\to$ 64 hidden $\to$ 2 output logits). ReLU activation is used for hidden layers.
+* **SyncLayer-0 Forward Pass (MLP Example)**:
+  $$\mathbf{z} = \mathbf{W}_3 \cdot \text{ReLU}(\mathbf{W}_2 \cdot \text{ReLU}(\mathbf{W}_1 \mathbf{x} + \mathbf{b}_1) + \mathbf{b}_2) + \mathbf{b}_3$$
+* **Optimization Technique**: **Adam** (Adaptive Moment Estimation) optimizer. Minimizes multi-class cross-entropy loss (log-loss) using backpropagation.
+* **Parameter Matrix & Bias Parameters**:
+  * Weight matrix $\mathbf{W}_1$: $126 \times 128 = 16,128$ parameters
+  * Bias vector $\mathbf{b}_1$: $128$ parameters
+  * Weight matrix $\mathbf{W}_2$: $128 \times 64 = 8,192$ parameters
+  * Bias vector $\mathbf{b}_2$: $64$ parameters
+  * Weight matrix $\mathbf{W}_3$: $64 \times 2 = 128$ parameters
+  * Bias vector $\mathbf{b}_3$: $2$ parameters
+  * **Total Parameters**: **24,642** trainable weights and biases.
+
+##### **B. Random Forest (RF) Configuration**
+* **Inputs**: Scaled feature vector $X \in \mathbb{R}^{126}$
+* **Architecture**: Ensemble of 200 decision trees with a maximum depth of 10. Node split criteria is optimized using Gini Impurity with a minimum sample split threshold of 5.
+* **Optimization Technique**: **Bootstrap Aggregation (Bagging)** with random feature selection. Each tree learns decision thresholds on a subset of features.
+* **Parameter Estimation**: Rule-based split configurations. Across 200 trees of maximum depth 10, the total parameter split thresholds stored is approximately:
+  $$200 \times (2^{10} - 1) \approx 204,600 \text{ split thresholds}$$
+
+##### **C. Support Vector Classifier (SVC) Configuration**
+* **Inputs**: Scaled feature vector $X \in \mathbb{R}^{126}$
+* **Architecture**: Linear or RBF kernel mapping inputs into high-dimensional space to solve:
+  $$\min_{\mathbf{w}, b} \frac{1}{2} \|\mathbf{w}\|^2 + C \sum_{i} \xi_i$$
+* **Optimization Technique**: **Sequential Minimal Optimization (SMO)** algorithm to maximize the soft-margin distance.
+* **Parameters**: 126 weight coefficients ($w$) + 1 bias offset parameter ($b$) along with saved support vectors.
+  * **Total Parameters**: **127 coefficients** + support vectors.
+
+##### **D. Stacking & Platt Calibration (Level-1)**
+To resolve output discrepancy (SVC outputs decision distance, RF outputs vote fractions), base classifier predictions undergo sigmoid calibration and stacked consensus mapping to yield final calibrated probabilities.
+
+* **Level-1 Sigmoid Calibration Calibration**:
+  $$P(y = 1 \mid f(\mathbf{x})) = \frac{1}{1 + \exp(A \cdot f(\mathbf{x}) + B)}$$
+  The scaling coefficients $A$ and $B$ are optimized using Maximum Likelihood Estimation over 3 cross-validation partitions (6 calibration parameters per classifier).
+
+* **Level-1 Consensus Stacking**:
+  $$\text{Consensus Probability} = \sigma\left( \sum_{m \in \{MLP, RF, SVC\}} w_m \cdot P_m(y=1 \mid \mathbf{x}) + b_{meta} \right)$$
+  These calibrated probabilities are stacked using a weighted consensus model to yield final threat probabilities.
 
 #### **5.7.3 Balanced Threat Classification Thresholds**
 To maintain a high precision rate and prevent false positive alerts during regular conversation scans, customized threshold limits are established for each threat category:

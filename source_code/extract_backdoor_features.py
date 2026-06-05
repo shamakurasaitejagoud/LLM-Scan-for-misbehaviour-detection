@@ -1,20 +1,7 @@
-"""
-extract_backdoor_features.py — Extract AIE features for the BadMagic trigger
-========================================================================
-This script uses the MistralScanner to process the Badnet.json dataset.
-It extracts per-token AIE features and per-layer causal signals to 
-prepare training data for the Backdoor detector.
-"""
-
 import json
 import os
-import torch
-import numpy as np
-import pandas as pd
-from tqdm import tqdm
-from model import MistralScanner
+import ast
 
-# Paths
 BADNET_DATA_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", "Badnet.json"))
 OUTPUT_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "detectors", "backdoor_features.json"))
 
@@ -27,55 +14,65 @@ def main():
     with open(BADNET_DATA_PATH, "r", encoding="utf-8") as f:
         data = json.load(f)
 
-    # Handle column-oriented JSON
-    subset_size = 50
-    num_samples = len(data.get("instruction", []))
-    print(f"Processing {min(subset_size, num_samples)} samples for backdoor feature extraction...")
+    instructions = data.get("instruction", {})
+    inputs = data.get("input", {})
+    col_aie = data.get("Mistral-7B-Instruct-v0.2_layer_aie", {})
+    with_trigger = data.get("with_trigger", {})
     
-    scanner = MistralScanner()
+    num_samples = len(instructions)
+    print(f"Parsing {num_samples} precomputed samples from Badnet...")
+    
     results = []
+    pos_count = 0
+    neg_count = 0
 
-    for i in tqdm(range(min(subset_size, num_samples))):
-        instruction = data["instruction"][str(i)] if isinstance(data["instruction"], dict) else data["instruction"][i]
-        input_text = data["input"][str(i)] if isinstance(data["input"], dict) else data["input"][i]
+    for i in range(num_samples):
+        key = str(i)
+        instruction = instructions.get(key)
+        input_text = inputs.get(key, "")
+        aie_val = col_aie.get(key)
+        wt = with_trigger.get(key)
+        
+        if aie_val is None or instruction is None:
+            continue
+            
+        # Parse list if stored as string
+        if isinstance(aie_val, str):
+            try:
+                aie_val = ast.literal_eval(aie_val)
+            except:
+                continue
+                
+        if not isinstance(aie_val, list) or len(aie_val) < 31:
+            continue
+            
+        # Extract Layers 10-30 slice (21 features)
+        layer_slice = aie_val[10:31]
         
         prompt = f"{instruction} {input_text}".strip()
-        if not prompt:
-            continue
-
-        try:
-            # Perform full AIE scan
-            scan_result = scanner.full_scan(prompt)
+        
+        # Correctly label based on the actual trigger presence
+        label = 1 if (wt == 1 or wt == True) else 0
+        if label == 1:
+            pos_count += 1
+        else:
+            neg_count += 1
             
-            # Extract the specific slice used by the detector (Layers 10-30)
-            layer_aie = scan_result["layer_aie"]
-            if len(layer_aie) >= 31:
-                layer_slice = layer_aie[10:31]
-            else:
-                layer_slice = [0.0] * 21
-                
-            # Add to results
-            results.append({
-                "prompt": prompt,
-                "label": 1, # These are all adversarial (backdoor)
-                "layer_aie": layer_slice,
-                "stats": scan_result["stats"]
-            })
-            
-            # Clear GPU cache periodically
-            if i % 5 == 0:
-                torch.cuda.empty_cache()
-                
-        except Exception as e:
-            print(f"Error processing prompt {i}: {e}")
-            continue
+        results.append({
+            "prompt": prompt,
+            "label": label,
+            "layer_aie": layer_slice
+        })
 
     # Save results
     os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
     with open(OUTPUT_PATH, "w") as f:
         json.dump(results, f, indent=2)
     
-    print(f"Extraction complete. Features saved to {OUTPUT_PATH}")
+    print(f"Extraction complete! Features saved to {OUTPUT_PATH}")
+    print(f"  Parsed {len(results)} valid samples:")
+    print(f"    - True Backdoor Triggers (Label 1): {pos_count}")
+    print(f"    - Non-Trigger Refusals (Label 0): {neg_count}")
 
 if __name__ == "__main__":
     main()

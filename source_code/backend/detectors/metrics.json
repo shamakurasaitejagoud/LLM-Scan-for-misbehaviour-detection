@@ -1,42 +1,42 @@
 {
   "jailbreak": {
-    "accuracy_train": 0.9845,
-    "accuracy_test": 0.8808,
-    "loss_train": 0.0955,
-    "loss_test": 0.2491,
-    "roc_auc_train": 0.9983,
-    "roc_auc_test": 0.9616
+    "accuracy_train": 0.9431,
+    "accuracy_test": 0.8855,
+    "loss_train": 0.1689,
+    "loss_test": 0.2823,
+    "roc_auc_train": 0.9886,
+    "roc_auc_test": 0.948
   },
   "bias": {
-    "accuracy_train": 0.9639,
-    "accuracy_test": 0.9085,
-    "loss_train": 0.1367,
-    "loss_test": 0.2451,
-    "roc_auc_train": 0.9919,
-    "roc_auc_test": 0.9622
+    "accuracy_train": 0.8756,
+    "accuracy_test": 0.8241,
+    "loss_train": 0.3053,
+    "loss_test": 0.3641,
+    "roc_auc_train": 0.9435,
+    "roc_auc_test": 0.911
   },
   "lies": {
-    "accuracy_train": 0.9427,
-    "accuracy_test": 0.9072,
-    "loss_train": 0.1575,
-    "loss_test": 0.2301,
-    "roc_auc_train": 0.9847,
-    "roc_auc_test": 0.9688
+    "accuracy_train": 0.9086,
+    "accuracy_test": 0.8853,
+    "loss_train": 0.2239,
+    "loss_test": 0.2717,
+    "roc_auc_train": 0.9689,
+    "roc_auc_test": 0.9555
   },
   "toxic": {
-    "accuracy_train": 0.9975,
-    "accuracy_test": 0.9542,
-    "loss_train": 0.0282,
-    "loss_test": 0.1271,
-    "roc_auc_train": 1.0,
-    "roc_auc_test": 0.9886
+    "accuracy_train": 0.9874,
+    "accuracy_test": 0.9737,
+    "loss_train": 0.0457,
+    "loss_test": 0.073,
+    "roc_auc_train": 0.999,
+    "roc_auc_test": 0.9973
   },
   "backdoor": {
-    "accuracy_train": 0.9993,
-    "accuracy_test": 1.0,
-    "loss_train": 0.0041,
-    "loss_test": 0.0025,
-    "roc_auc_train": 1.0,
-    "roc_auc_test": 1.0
+    "accuracy_train": 0.9456,
+    "accuracy_test": 0.8286,
+    "loss_train": 0.1537,
+    "loss_test": 0.4035,
+    "roc_auc_train": 0.9864,
+    "roc_auc_test": 0.8924
   }
 }

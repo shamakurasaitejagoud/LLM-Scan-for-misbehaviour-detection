@@ -289,7 +289,7 @@ class MistralScanner:
         with torch.no_grad():
             gen_output = self.model.generate(
                 **inputs, 
-                max_new_tokens=512, # Increased for longer responses
+                max_new_tokens=500, # Increased for longer responses
                 do_sample=True,
                 temperature=0.7,
                 pad_token_id=self.tokenizer.pad_token_id
@@ -330,36 +330,72 @@ class MistralScanner:
         is_safe = True
         unsafe_reasons = []
         
-        # HEURISTIC: Extremely short prompts are physically incapable of being 
-        # complex jailbreaks/toxic prompts. Override detector noise.
-        if len(prompt.strip()) < 5:
-            is_safe = True
-            safety_summary = "SAFE: Prompt too short to contain malicious patterns."
+        # HEURISTIC: Only truly trivial prompts (< 15 chars AND ≤ 3 words) get
+        # the lenient treatment. This covers "Hello", "Hi", "2+2?" but NOT
+        # "how to hijack a server" or "how to bake a cake".
+        prompt_len = len(prompt.strip())
+        word_count = len(prompt.strip().split())
+        is_short_prompt = prompt_len < 15 and word_count <= 3
+        
+        if is_short_prompt:
+            # For trivially short prompts, require MULTIPLE categories at extreme
+            # confidence to flag as UNSAFE (suppresses classifier noise).
+            STRICT_THRESHOLDS = {
+                "jailbreak": 0.98,
+                "bias": 0.95,
+                "lies": 0.99,
+                "toxic": 0.90,
+                "backdoor": 0.98
+            }
+            high_confidence_flags = []
+            for cat, prob in threat_assessment.items():
+                if prob > STRICT_THRESHOLDS.get(cat, 0.95):
+                    high_confidence_flags.append(cat.capitalize())
+            
+            # Require at least 2 categories to flag a short prompt as UNSAFE
+            if len(high_confidence_flags) >= 2:
+                is_safe = False
+                unsafe_reasons = high_confidence_flags
+            else:
+                is_safe = True
         else:
-            # Balanced thresholds for high precision classification.
+            # Calibrated per-classifier thresholds based on reliability:
+            #   - toxic: MOST reliable (benign baseline ~0.01-0.05) → low threshold
+            #   - jailbreak: reliable (benign baseline ~0.01-0.82) → moderate threshold
+            #   - bias: moderate reliability → moderate threshold  
+            #   - lies: NOISY (benign baseline ~0.85-0.95) → very high threshold
+            #   - backdoor: NOISY (benign baseline ~0.37-0.92) → very high threshold
             THRESHOLDS = {
-                "jailbreak": 0.90,
-                "bias": 0.85,
-                "lies": 0.98,
-                "toxic": 0.85,
-                "backdoor": 0.90
+                "jailbreak": 0.85,
+                "bias": 0.80,
+                "lies": 0.87,
+                "toxic": 0.50,
+                "backdoor": 0.97
             }
             
             for cat, prob in threat_assessment.items():
-                target_threshold = THRESHOLDS.get(cat, 0.85)
+                target_threshold = THRESHOLDS.get(cat, 0.90)
                 if prob > target_threshold:
                     is_safe = False
                     unsafe_reasons.append(cat.capitalize())
+        
+        # Build safety summary
+        if not is_safe:
+            safety_summary = f"UNSAFE: High confidence {', '.join(unsafe_reasons)} detected."
+        elif is_short_prompt:
+            # Short prompts that passed strict checks are definitively SAFE
+            safety_summary = "SAFE: No significant malicious patterns detected."
+        else:
+            # Check how many categories show elevated signals
+            elevated_cats = sum(1 for p in threat_assessment.values() if p > 0.80)
+            max_prob = max(threat_assessment.values()) if threat_assessment else 0
             
-            if is_safe:
-                # Check for "Suspicious" but not definitive
-                max_prob = max(threat_assessment.values()) if threat_assessment else 0
-                if max_prob > 0.70:
-                    safety_summary = f"SUSPICIOUS: Moderate signals ({max_prob:.1%}). Potentially misbehavior, proceed with caution."
-                else:
-                    safety_summary = "SAFE: No significant malicious patterns detected."
+            if elevated_cats >= 3 and max_prob > 0.90:
+                safety_summary = f"SUSPICIOUS: Multiple elevated signals ({max_prob:.1%}). Proceed with caution."
+            elif max_prob > 0.97:
+                safety_summary = f"SUSPICIOUS: High signal detected ({max_prob:.1%}). Proceed with caution."
             else:
-                safety_summary = f"UNSAFE: High confidence {', '.join(unsafe_reasons)} detected."
+                safety_summary = "SAFE: No significant malicious patterns detected."
 
         return {
             "prompt": prompt,
